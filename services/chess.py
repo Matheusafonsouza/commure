@@ -1,15 +1,15 @@
-from typing import List, Optional
 from datetime import datetime, timedelta
-
-import requests
-import pandas as pd
-from tqdm import tqdm
-from pydantic import TypeAdapter
+from typing import List, Optional
 from urllib.parse import urljoin
 
-from constants import API_URL
-from models.rating_history import RatingHistory
+import pandas as pd
+import requests
+from pydantic import TypeAdapter
+from tqdm import tqdm
+
+from config.constants import API_URL
 from models.player import Player
+from models.rating_history import RatingHistory
 
 
 class ChessService:
@@ -26,33 +26,37 @@ class ChessService:
             self._fetch(f"user/{username}/rating-history")
         )
 
-    def _get_player_type_rating_history(self, username: str, type: str) -> Optional[RatingHistory]:
+    def _get_player_type_rating_history(
+        self, username: str, type: str
+    ) -> Optional[RatingHistory]:
         for rating in self._get_player_rating_history(username):
             if rating.name.lower() == type:
                 return rating
         return None
-            
+
     def get_top_players(self, length: int, type: str) -> List[Player]:
-        data = self._fetch( f"player/top/{length}/{type}")
+        data = self._fetch(f"player/top/{length}/{type}")
         return TypeAdapter(List[Player]).validate_python(data.get("users"))
 
-    def get_last_days_player_rating_history_points(self, username: str, type: str, days: int) -> dict:
+    def get_last_days_player_rating_history_points(
+        self, username: str, type: str, days: int
+    ) -> dict:
         history = self._get_player_type_rating_history(
             username,
             type,
         )
         if not history:
             return {}
-        
-        score = 0
-        point_hashmap = {f"{point[0]}{point[1]+1}{point[2]}": point[3] for point in history.points}
 
-        days_count = days
+        score = 0
+        point_hashmap = {f"{p[0]}{p[1]+1}{p[2]}": p[3] for p in history.points}
 
         hashmap = {}
-        for index in range(days_count):
-            date = (datetime.now() - timedelta(days=days_count-index-1)).date()
-            score = point_hashmap.get(f"{date.year}{date.month}{date.day}") or score
+        for index in range(days):
+            now = datetime.now()
+            date = (now - timedelta(days=days - index - 1)).date()
+            score_key = f"{date.year}{date.month}{date.day}"
+            score = point_hashmap.get(score_key) or score
             hashmap[date.strftime("%Y-%m-%d")] = score
 
         return hashmap
@@ -71,4 +75,4 @@ class ChessService:
 
         df = pd.DataFrame(histories)
         df.insert(0, "username", df.pop("username"))
-        df.to_csv("test.csv", sep=",", encoding="utf-8", index=False)
+        df.to_csv("histories.csv", sep=",", encoding="utf-8", index=False)

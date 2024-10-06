@@ -1,11 +1,11 @@
-from enums import GameTypes
-from service import ChessService
-
+from enums.game_types import GameTypes
+from services.chess import ChessService
 
 service = ChessService()
 
+
 def print_top_50_classical_players() -> None:
-    for player in  service.get_top_players(50, GameTypes.Classical):
+    for player in service.get_top_players(50, GameTypes.Classical):
         print(player.username)
 
 
@@ -17,14 +17,17 @@ def print_last_30_day_rating_for_top_player() -> None:
         30,
     )
     print(last_30_days_points)
-    
+
 
 def save_top_50_classical_csv() -> None:
     service.save_players_rating_history_csv(50, GameTypes.Classical)
 
 
 def main() -> None:
-    save_top_50_classical_csv()
+    print_top_50_classical_players()
+    # print_last_30_day_rating_for_top_player()
+    # save_top_50_classical_csv()
+
 
 if __name__ == "__main__":
     main()
